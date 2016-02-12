@@ -12,11 +12,14 @@
 #include <UTFT.h>
 #include <UTouch.h>
 #include "multiButtons.h"
+#include <Wire.h>
+#include "RTClib.h"
 
 
 // Declare which fonts we will be using
 extern uint8_t SmallFont[];
 extern uint8_t BigFont[];
+extern uint8_t SevenSegNumFont[];
 extern uint8_t Dingbats1_XL[];
 
 // Set up UTFT...
@@ -45,12 +48,13 @@ UTFT    myGLCD(SSD1963_800,38,39,40,41);
 // CC3200 LaunchPad (pins used in the examples): 31,13,19,28,17
 //
 UTouch        myTouch(6,5,4,3,2);
+RTC_DS1307    RTC;
 
 // Finally we set up multiButtons :)
 multiButtons  multiButtons(&myGLCD, &myTouch);
 
 //Prepare Globals
-int butL1, butL2, butL3, butR1, butR2, butR3, butUp, butDn, pressed_button;
+int butL1, butL2, butL3, butR1, butR2, butR3, butUp, butDn, pressed_button, curMin, curDay;
 boolean default_colors = true, buttonState;
 double dblTempSetPoint;
 
@@ -78,18 +82,77 @@ void setup()
   //Set initial temparature
   tempSetPoint(21.5);
 
+  //Initialize the Clock
+  initClock();
+
 
 }
 
 void loop()
 {
 
+    //Update the Clock
+    updateClock();
 
-//    myGLCD.print("You pressed:", CENTER, 10);
-//    myGLCD.print("None", CENTER, 30 );
-    while(1) 
-    {
-      if (myTouch.dataAvailable() == true)
+    //Handle touch events
+    handleTouch();
+      
+}
+
+
+
+void drawButtonSheet(){
+      int butL1, butL2, butL3, butR1, butR2, butR3, butUp, butDn, pressed_button;
+    boolean default_colors = true, buttonState;
+    butL1 = multiButtons.addButton( 10, 220, 300,  70, "Trap",0,"right",true,true,false);
+    butL2 = multiButtons.addButton( 10, 310, 300,  70, "Ventilatie achter",0,"right",true,true,false);
+    butR3 = multiButtons.addButton( 10, 400, 300,  70, "Warm water",0,"right",true,false,false);
+    
+    butR1 = multiButtons.addButton( 490, 220, 300,  70, "LPG",0,"left",true,true,true);
+    butR2 = multiButtons.addButton( 490, 310, 300,  70, "Drinkwater",0,"left",true,true,true);
+    butR3 = multiButtons.addButton( 490, 400, 300,  70, "Afvalwater",0,"left",false,true,true);
+
+    butUp = multiButtons.addButton( 370, 220, 70,  70, "+",0,"center",false,false,false);
+    butDn = multiButtons.addButton( 370, 400, 70,  70, "-",0,"center",false,false,false);
+
+    
+    multiButtons.drawButtons();
+    multiButtons.disableButton(butR3,false);
+
+    //Set initial measurements
+     multiButtons.setPercentage(butR1,0);
+     multiButtons.setPercentage(butR2,0);
+     multiButtons.setPercentage(butR3,0);
+
+}
+
+
+void tempSetPoint(double dDelta){
+    dblTempSetPoint = dblTempSetPoint + dDelta;
+    myGLCD.printNumF(dblTempSetPoint, 1, CENTER, 340);
+}
+
+
+void initClock(){
+    Wire.begin();
+    RTC.begin();
+    RTC.adjust(DateTime(__DATE__, __TIME__));
+}
+
+void updateClock(){
+  DateTime now = RTC.now();
+
+  if (curMin!=now.minute()){
+    //Update the interface
+    curMin=now.minute();
+    myGLCD.setFont(SevenSegNumFont);
+    myGLCD.printNumI(now.hour(), 640, 50, 2,0);
+    myGLCD.printNumI(now.minute(), 720, 50, 2,0);
+  }
+}
+
+void handleTouch(){
+  if (myTouch.dataAvailable() == true)
       {
         Serial.println("Screen touched");
         
@@ -123,39 +186,6 @@ void loop()
                 //myGLCD.print("Button 0", CENTER, 30 );
           break;
         }
-       }
     }
-}
-
-void drawButtonSheet(){
-      int butL1, butL2, butL3, butR1, butR2, butR3, butUp, butDn, pressed_button;
-    boolean default_colors = true, buttonState;
-    butL1 = multiButtons.addButton( 10, 240, 300,  70, "Trap",0,"right",true,true,false);
-    butL2 = multiButtons.addButton( 10, 320, 300,  70, "Ventilatie achter",0,"right",true,true,false);
-    butR3 = multiButtons.addButton( 10, 400, 300,  70, "Warm water",0,"right",true,false,false);
-    
-    butR1 = multiButtons.addButton( 490, 240, 300,  70, "LPG",0,"left",true,true,true);
-    butR2 = multiButtons.addButton( 490, 320, 300,  70, "Drinkwater",0,"left",true,true,true);
-    butR3 = multiButtons.addButton( 490, 400, 300,  70, "Afvalwater",0,"left",false,true,true);
-
-    butUp = multiButtons.addButton( 370, 240, 70,  70, "+",0,"center",false,false,false);
-    butDn = multiButtons.addButton( 370, 400, 70,  70, "-",0,"center",false,false,false);
-
-    
-    multiButtons.drawButtons();
-    multiButtons.disableButton(butR3,false);
-
-    //Set initial measurements
-     multiButtons.setPercentage(butR1,0);
-     multiButtons.setPercentage(butR2,0);
-     multiButtons.setPercentage(butR3,0);
-
-}
-
-
-void tempSetPoint(double dDelta){
-    dblTempSetPoint = dblTempSetPoint + dDelta;
-    myGLCD.printNumF(dblTempSetPoint, 1, CENTER, 340);
-    //myGLCD.print(dblTempSetPoint , CENTER, 340);  
 }
 
