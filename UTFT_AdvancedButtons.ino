@@ -54,9 +54,10 @@ RTC_DS1307    RTC;
 multiButtons  multiButtons(&myGLCD, &myTouch);
 
 //Prepare Globals
-int butL1, butL2, butL3, butR1, butR2, butR3, butUp, butDn, pressed_button, curMin, curDay;
+int butL1, butL2, butL3, butR1, butR2, butR3, butUp, butDn, pressed_button, curMin, curHr, curDay;
 boolean default_colors = true, buttonState;
 double dblTempSetPoint;
+int fwPinAn = 0;
 
 //Set up the interface
 void setup()
@@ -86,23 +87,32 @@ void setup()
   initClock();
 
 
+
 }
 
 void loop()
 {
 
     //Update the Clock
-    updateClock();
+    if (updateClock()==true){
+      measureFWLevel();
+    }
 
     //Handle touch events
     handleTouch();
-      
+
+
+    //Debug - > measure tank
+    //measureFWLevel();  
+
+
+    delay(1000);
 }
 
 
 
 void drawButtonSheet(){
-      int butL1, butL2, butL3, butR1, butR2, butR3, butUp, butDn, pressed_button;
+//      int butL1, butL2, butL3, butR1, butR2, butR3, butUp, butDn, pressed_button;
     boolean default_colors = true, buttonState;
     butL1 = multiButtons.addButton( 10, 220, 300,  70, "Trap",0,"right",true,true,false);
     butL2 = multiButtons.addButton( 10, 310, 300,  70, "Ventilatie achter",0,"right",true,true,false);
@@ -139,17 +149,65 @@ void initClock(){
     RTC.adjust(DateTime(__DATE__, __TIME__));
 }
 
-void updateClock(){
+boolean updateClock(){
   DateTime now = RTC.now();
+  boolean result = false;
 
+  int perC = (1.66666 * now.second());
+  Serial.println("percentage " + String(perC) + " based on " + String(now.second()));
+//  multiButtons.setPercentage(butR1,perC);
+  multiButtons.setPercentage(butR2,perC);
+//  multiButtons.setPercentage(butR3,perC);
+  
   if (curMin!=now.minute()){
     //Update the interface
     curMin=now.minute();
     myGLCD.setFont(SevenSegNumFont);
-    myGLCD.printNumI(now.hour(), 640, 50, 2,0);
     myGLCD.printNumI(now.minute(), 720, 50, 2,0);
+    result = true;
   }
+
+  if (curHr!=now.hour()){
+    //Update the interface
+    curHr=now.minute();
+    myGLCD.setFont(SevenSegNumFont);
+    myGLCD.printNumI(now.hour(), 640, 50, 2,0);
+  }
+
+  return result;
 }
+
+int measureFWLevel(){
+  int  raw = analogRead(fwPinAn); 
+  int intLevel = 0;
+
+  //Serial.println(raw);
+  
+  if (raw>1000){
+    //Full
+    intLevel=100;
+  } else if (raw>33){
+    intLevel=90;
+  } else if (raw>16){
+    intLevel=70;
+  } else if (raw>10){
+    intLevel=50;
+  } else if (raw>8){
+    intLevel=30;
+  } else if (raw>5){
+    intLevel=10;
+  } else if (raw<=5){
+    intLevel=0;
+    multiButtons.disableState(butR2, true);
+  }
+  
+  Serial.println(String(raw) + " -> " + String(intLevel));
+  multiButtons.setPercentage(butR2, intLevel);
+  return intLevel;
+
+  
+}
+
 
 void handleTouch(){
   if (myTouch.dataAvailable() == true)
@@ -188,4 +246,5 @@ void handleTouch(){
         }
     }
 }
+
 

@@ -295,10 +295,12 @@ void multiButtons::setPercentage(int buttonID, int percentage)
 {
   //Get current settings
   word  _current_color = _UTFT->getColor();
-
+  Serial.println("MB :: setPerc for " + String(buttonID));
   if ( percentage!=100){
     uint16_t bar_fill = ((buttons[buttonID].bar_fact * percentage)/100);
     _UTFT->setColor(_current_color);
+    Serial.println("MB :: setPerc -> fillRect " + String(buttons[buttonID].bar_x1+1) + " - " + String(buttons[buttonID].bar_y1+1) + " - " + String(buttons[buttonID].bar_x1 + bar_fill-2) + " - " + String(buttons[buttonID].bar_y2-1));
+    
     _UTFT->fillRect((buttons[buttonID].bar_x1+1),(buttons[buttonID].bar_y1+1),(buttons[buttonID].bar_x1 + bar_fill-2),(buttons[buttonID].bar_y2-1));
     _UTFT->setColor(_color_background);
     _UTFT->fillRect((buttons[buttonID].bar_x1 + bar_fill),(buttons[buttonID].bar_y1+1),(buttons[buttonID].bar_x2 -1),(buttons[buttonID].bar_y2-1));
