@@ -103,7 +103,7 @@ void loop()
 
 
     //Debug - > measure tank
-    //measureFWLevel();  
+    measureFWLevel();  
 
 
     delay(1000);
@@ -154,9 +154,9 @@ boolean updateClock(){
   boolean result = false;
 
   int perC = (1.66666 * now.second());
-  Serial.println("percentage " + String(perC) + " based on " + String(now.second()));
+//  Serial.println("percentage " + String(perC) + " based on " + String(now.second()));
 //  multiButtons.setPercentage(butR1,perC);
-  multiButtons.setPercentage(butR2,perC);
+//  multiButtons.setPercentage(butR2,perC);
 //  multiButtons.setPercentage(butR3,perC);
   
   if (curMin!=now.minute()){
@@ -182,25 +182,45 @@ int measureFWLevel(){
   int intLevel = 0;
 
   //Serial.println(raw);
-  
+
   if (raw>1000){
     //Full
-    intLevel=100;
-  } else if (raw>33){
-    intLevel=90;
-  } else if (raw>16){
-    intLevel=70;
-  } else if (raw>10){
-    intLevel=50;
-  } else if (raw>8){
-    intLevel=30;
-  } else if (raw>5){
-    intLevel=10;
-  } else if (raw<=5){
     intLevel=0;
     multiButtons.disableState(butR2, true);
+  } else if (raw>800){
+    intLevel=10;
+  } else if (raw>680){
+    intLevel=30;
+  } else if (raw>550){
+    intLevel=50;
+  } else if (raw>350){
+    intLevel=70;
+  } else if (raw>200){
+    intLevel=90;
+  } else{
+    intLevel=100;
   }
-  
+
+
+//  
+//  if (raw<=50){
+//    //Full
+//    intLevel=0;
+//  } else if (raw>200){
+//    intLevel=10;
+//  } else if (raw>350){
+//    intLevel=30;
+//  } else if (raw>550){
+//    intLevel=50;
+//  } else if (raw>680){
+//    intLevel=70;
+//  } else if (raw>800){
+//    intLevel=90;
+//  } else if (raw>1000){
+//    intLevel=100;
+//    multiButtons.disableState(butR2, true);
+//  }
+//  
   Serial.println(String(raw) + " -> " + String(intLevel));
   multiButtons.setPercentage(butR2, intLevel);
   return intLevel;
